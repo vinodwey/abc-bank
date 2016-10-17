@@ -1,78 +1,109 @@
-package com.abc;
+package com.abc; 
 
-import java.util.ArrayList;
+ 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import com.abc.AbstractAccount.AccountType;
 
-import static java.lang.Math.abs;
-
-public class Customer {
-    private String name;
-    private List<Account> accounts;
-
-    public Customer(String name) {
-        this.name = name;
-        this.accounts = new ArrayList<Account>();
+ 
+public class Customer { 
+     private String name; 
+     private Map<AccountType,AbstractAccount> accounts; 
+ 
+ 
+     public Customer(String name) { 
+         this.name = name; 
+         this.accounts = new HashMap<AccountType,AbstractAccount>(); 
+     } 
+ 
+     public String getName() { 
+         return name; 
+     } 
+ 
+     public void openAccount(AccountType actType) { 
+    	 if(accounts.containsKey(actType)) {
+    		 throw new IllegalArgumentException("Account already exists"); 
+    	 }
+       	 switch(actType) {
+       	 case CHECKING: 
+       		 accounts.put(actType, new CheckingAccount());
+       		 break;
+       	 case SAVINGS:
+       		accounts.put(actType, new SavingsAccount());
+       		break;
+       	 case MAXI_SAVINGS:
+       		accounts.put(actType, new MaxiSavingAccount());
+       		break;
+       	 }
+     } 
+ 
+    public int getNumberOfAccounts() { 
+         return accounts.size(); 
+     } 
+ 
+     public double totalInterestEarned() { 
+         double total = 0; 
+         for (AbstractAccount a : accounts.values()) 
+             total += a.dailyIntRate(); 
+         return total; 
+     } 
+ 
+    public boolean transfer(AccountType fromAct, AccountType toAct,double xferAmount) {
+    	 double balance=accounts.get(fromAct).getBalance();
+    	 if(balance < xferAmount){
+    		 throw new IllegalArgumentException("insuffienct balance for transfer");
+    	 }
+    	 withdraw(xferAmount,fromAct);
+    	 try {
+    		 deposit(xferAmount,toAct);
+    	 }	catch(Exception ex) {
+    	 }  finally {
+    		 deposit(xferAmount,fromAct);
+    	 }
+    	 return true;
     }
+     
+    public void deposit(double amount,AccountType acctType) { 
+         if (amount <= 0) { 
+             throw new IllegalArgumentException("amount must be greater than zero"); 
+         } else { 
+        	 accounts.get(acctType).getTransactions().add(new Transaction(amount)); 
+         } 
+     }
+     
+    public void withdraw(double withdrawAmount, AccountType acctType) { 
+    	 if (withdrawAmount <= 0) { 
+    		 throw new IllegalArgumentException("amount must be greater than zero"); 
+    	 } else { 
+    		 double balance = accounts.get(acctType).getBalance();
+    		 if(balance < withdrawAmount ){
+    			 throw new IllegalArgumentException("insufficient balance");
+    		 }
+    		 accounts.get(acctType).getTransactions().add(new Transaction(-1 * withdrawAmount)); 
+    	 } 
+     } 
+     
+     public double calculateTotalInterestEarned() {  
+    	 double total = 0;  
+    	 for (AbstractAccount a : accounts.values())  
+    		 total += a.dailyIntRate();  
+    	 return total;  
+     }  
+     
+     public double totalBalance() {  
+    	 double total = 0;  
+    	 for (AbstractAccount a : accounts.values())  
+    		 total += a.getBalance();  
+    	 return total;  
+     }  
+     
+     public List<AbstractAccount> getAccounts() {
+    	 return (List<AbstractAccount>) accounts.values();
+     }
+     
+     public Map<AccountType,AbstractAccount> getAccountMap() {
+    	 return accounts;
+     }
 
-    public String getName() {
-        return name;
-    }
-
-    public Customer openAccount(Account account) {
-        accounts.add(account);
-        return this;
-    }
-
-    public int getNumberOfAccounts() {
-        return accounts.size();
-    }
-
-    public double totalInterestEarned() {
-        double total = 0;
-        for (Account a : accounts)
-            total += a.interestEarned();
-        return total;
-    }
-
-    public String getStatement() {
-        String statement = null;
-        statement = "Statement for " + name + "\n";
-        double total = 0.0;
-        for (Account a : accounts) {
-            statement += "\n" + statementForAccount(a) + "\n";
-            total += a.sumTransactions();
-        }
-        statement += "\nTotal In All Accounts " + toDollars(total);
-        return statement;
-    }
-
-    private String statementForAccount(Account a) {
-        String s = "";
-
-       //Translate to pretty account type
-        switch(a.getAccountType()){
-            case Account.CHECKING:
-                s += "Checking Account\n";
-                break;
-            case Account.SAVINGS:
-                s += "Savings Account\n";
-                break;
-            case Account.MAXI_SAVINGS:
-                s += "Maxi Savings Account\n";
-                break;
-        }
-
-        //Now total up all the transactions
-        double total = 0.0;
-        for (Transaction t : a.transactions) {
-            s += "  " + (t.amount < 0 ? "withdrawal" : "deposit") + " " + toDollars(t.amount) + "\n";
-            total += t.amount;
-        }
-        s += "Total " + toDollars(total);
-        return s;
-    }
-
-    private String toDollars(double d){
-        return String.format("$%,.2f", abs(d));
-    }
-}
+ } 

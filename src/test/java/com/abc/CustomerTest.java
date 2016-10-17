@@ -1,23 +1,25 @@
 package com.abc;
 
-import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import com.abc.AbstractAccount.AccountType;
 
 import static org.junit.Assert.assertEquals;
 
 public class CustomerTest {
+	private static final double DOUBLE_DELTA = 1e-15;  
 
-    @Test //Test customer statement generation
-    public void testApp(){
+	public void testCustStatement(){
+    	
+    	Customer henry = new Customer("Henry");
+    	henry.openAccount(AccountType.CHECKING);
+    	henry.openAccount(AccountType.SAVINGS);
 
-        Account checkingAccount = new Account(Account.CHECKING);
-        Account savingsAccount = new Account(Account.SAVINGS);
-
-        Customer henry = new Customer("Henry").openAccount(checkingAccount).openAccount(savingsAccount);
-
-        checkingAccount.deposit(100.0);
-        savingsAccount.deposit(4000.0);
-        savingsAccount.withdraw(200.0);
+        henry.deposit(100.0,AccountType.CHECKING);
+        henry.deposit(4000.0,AccountType.SAVINGS);
+        henry.withdraw(200.0,AccountType.SAVINGS);
 
         assertEquals("Statement for Henry\n" +
                 "\n" +
@@ -30,28 +32,78 @@ public class CustomerTest {
                 "  withdrawal $200.00\n" +
                 "Total $3,800.00\n" +
                 "\n" +
-                "Total In All Accounts $3,900.00", henry.getStatement());
+                "Total In All Accounts $3,900.00", ReportGenerator.generateCustomerStatement(henry));
     }
 
     @Test
     public void testOneAccount(){
-        Customer oscar = new Customer("Oscar").openAccount(new Account(Account.SAVINGS));
-        assertEquals(1, oscar.getNumberOfAccounts());
+    	Customer henry = new Customer("Henry");
+    	henry.openAccount(AccountType.CHECKING);
+    	assertEquals(1, henry.getNumberOfAccounts());
     }
 
     @Test
     public void testTwoAccount(){
-        Customer oscar = new Customer("Oscar")
-                .openAccount(new Account(Account.SAVINGS));
-        oscar.openAccount(new Account(Account.CHECKING));
-        assertEquals(2, oscar.getNumberOfAccounts());
+    	Customer henry = new Customer("Henry");
+    	henry.openAccount(AccountType.CHECKING);
+    	henry.openAccount(AccountType.SAVINGS);
+    	assertEquals(2, henry.getNumberOfAccounts());
     }
 
-    @Ignore
+    @Test
     public void testThreeAcounts() {
-        Customer oscar = new Customer("Oscar")
-                .openAccount(new Account(Account.SAVINGS));
-        oscar.openAccount(new Account(Account.CHECKING));
-        assertEquals(3, oscar.getNumberOfAccounts());
+    	Customer henry = new Customer("Henry");
+    	henry.openAccount(AccountType.CHECKING);
+    	henry.openAccount(AccountType.SAVINGS);
+    	henry.openAccount(AccountType.MAXI_SAVINGS);
+    	assertEquals(3, henry.getNumberOfAccounts());
     }
+    
+    public void testTransfer() {  
+    	Customer henry = new Customer("Henry");
+    	henry.openAccount(AccountType.CHECKING);
+    	henry.openAccount(AccountType.SAVINGS);
+        henry.deposit(350.0, AccountType.CHECKING);  	
+
+        henry.deposit(800, AccountType.SAVINGS);  
+        henry.transfer(AccountType.CHECKING, AccountType.SAVINGS,250);  
+        assertEquals(344,henry.totalBalance(),DOUBLE_DELTA);
+    }
+    
+    
+    @Test  
+    public void testInterestEarned() {  
+    	Customer henry = new Customer("Henry");  
+    	henry.openAccount(AccountType.CHECKING);  
+    	henry.openAccount(AccountType.SAVINGS);  
+    	henry.deposit(1000.0, AccountType.CHECKING);  
+        henry.deposit(2000.0, AccountType.SAVINGS);  
+        assertEquals(1.378082191780777, henry.calculateTotalInterestEarned(), DOUBLE_DELTA);  
+   }  
+   
+    
+    @Rule  
+    public ExpectedException thrown = ExpectedException.none();  
+    @Test  
+    public void testFailedWithdraw() {  
+    	Customer henry = new Customer("Henry");  
+    	henry.openAccount(AccountType.CHECKING);  
+      	thrown.expect(IllegalArgumentException.class);  
+    	thrown.expectMessage("insufficient balance");  
+    	henry.withdraw(200.0, AccountType.CHECKING);  
+ }  
+   
+   @Test  
+   public void testFailedTransfer() {  
+	   Customer henry = new Customer("Henry");  
+   	   henry.openAccount(AccountType.CHECKING); 
+   	   henry.deposit(1000.0, AccountType.CHECKING);  
+   	   henry.openAccount(AccountType.SAVINGS);  
+   	   henry.deposit(2000.0, AccountType.SAVINGS);  
+       thrown.expect(IllegalArgumentException.class);  
+       thrown.expectMessage("insuffienct balance for transfer");  
+       henry.transfer(AccountType.CHECKING, AccountType.SAVINGS,4000.0);  
+ }  
+ 
+     
 }
