@@ -58,6 +58,7 @@ public class Customer {
     	 try {
     		 deposit(xferAmount,toAct);
     	 }	catch(Exception ex) {
+			 throw new  IllegalArgumentException("transfer failed!")
     	 }  finally {
     		 deposit(xferAmount,fromAct);
     	 }
